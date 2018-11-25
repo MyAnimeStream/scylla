@@ -7,7 +7,10 @@ RUN apt-get install -y libssl-dev
 RUN mkdir -p /var/www/scylla
 WORKDIR /var/www/scylla
 
-RUN pip install scylla
+COPY scylla/ ./scylla
+COPY setup.cfg setup.py requirements.txt README.rst README.md LICENSE ./
+
+RUN pip install .
 
 FROM python:3.6.5-slim
 
