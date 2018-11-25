@@ -4,7 +4,7 @@ import sys
 import traceback
 from multiprocessing import Process
 
-from tornado import httpclient, web, ioloop, iostream
+from tornado import httpclient, ioloop, iostream, web
 from tornado.httpclient import HTTPResponse
 
 from scylla.config import get_config
@@ -107,20 +107,14 @@ class ForwardingRequestHandler(web.RequestHandler):
         host, port = self.request.uri.split(':')
         client = self.request.connection.stream
 
-        def read_from_client(data):
-            upstream.write(data)
-
-        def read_from_upstream(data):
-            client.write(data)
-
-        def client_close(data=None):
+        def close_client(data: bytes = None) -> None:
             if upstream.closed():
                 return
             if data:
                 upstream.write(data)
             upstream.close()
 
-        def upstream_close(data=None):
+        def upstream_close(data: bytes = None) -> None:
             if client.closed():
                 return
             if data:
@@ -129,11 +123,11 @@ class ForwardingRequestHandler(web.RequestHandler):
 
         def start_tunnel():
             logger.debug('CONNECT tunnel established to %s', self.request.uri)
-            client.read_until_close(client_close, read_from_client)
-            upstream.read_until_close(upstream_close, read_from_upstream)
+            client.read_until_close(close_client, upstream.write)
+            upstream.read_until_close(upstream_close, client.write)
             client.write(b'HTTP/1.0 200 Connection established\r\n\r\n')
 
-        def on_proxy_response(data=None):
+        def on_proxy_response(data: bytes = None) -> None:
             if data:
                 first_line = data.splitlines()[0]
                 http_v, status, text = first_line.split(None, 2)
@@ -145,7 +139,7 @@ class ForwardingRequestHandler(web.RequestHandler):
             self.set_status(500)
             self.finish()
 
-        def start_proxy_tunnel():
+        def start_proxy_tunnel() -> None:
             upstream.write(b'CONNECT %s HTTP/1.1\r\n' % self.request.uri.encode())
             upstream.write(b'Host: %s\r\n' % self.request.uri.encode())
             upstream.write(b'Proxy-Connection: Keep-Alive\r\n\r\n')
