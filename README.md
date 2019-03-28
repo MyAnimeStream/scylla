@@ -6,6 +6,9 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5DXFA7WGWPZBN)
 ===
 
+> The only purpose of this fork was to allow HTTPS forwards for the request forwarder, this has been added to the official
+> repository, so this fork is no longer necessary.
+
 An intelligent proxy pool for humanities, only supports Python 3.6. Key
 features:
 
